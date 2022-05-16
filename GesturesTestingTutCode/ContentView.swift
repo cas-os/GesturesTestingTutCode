@@ -9,14 +9,140 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        DragGesture_004()
+        DragGesture_007()
         
     }
 }
 
+// MARK - to check difference between .animation (deprecated in iOS 15.0) vs .withanimation ..?
+
+
+struct DragGesture_007: View {
+    @State private var minValue: Float = 0.0
+    @State private var maxValue: Float = Float(UIScreen.main.bounds.width - 50.0)
+    
+    var body: some View {
+        VStack {
+            Text("RangeSlider")
+            DTRangeSlider_007(
+                minValue: $minValue,
+                maxValue: $maxValue,
+                sliderWidth: CGFloat(maxValue),
+                globeMinMaxValuesColor: .black
+            )
+        }
+    }
+}
+
+
+struct DTRangeSlider_007: View {
+    @Binding var minValue: Float
+    @Binding var maxValue: Float
+    
+    @State var sliderWidth: CGFloat = 0.0
+    @State var backgroundTrackColor = Color.green.opacity(0.3)
+    @State var selectedTrackColor = Color.orange.opacity(0.25)
+    
+    @State var globeColor = Color.gray
+    @State var globeBackgroundColor = Color.black
+    
+    @State var globeMinMaxValuesColor = Color.black
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Text("0")
+                    .offset(x: 28, y: 20)
+                    .frame(width: 30, height: 30, alignment: .leading)
+                    .foregroundColor(globeMinMaxValuesColor)
+                Spacer()
+                
+                Text("100")
+                    .offset(x: -18, y: 20)
+                    .frame(width: 30, height: 30, alignment: .trailing)
+                    .foregroundColor(globeMinMaxValuesColor)
+                
+            }
+            ZStack(alignment: Alignment(horizontal: .leading, vertical: .center)) {
+                Capsule()
+                    .fill(backgroundTrackColor)
+                    .frame(width: CGFloat(sliderWidth + 10), height: 20, alignment: .center)
+            }
+        }
+    }
+}
+// MARK - DragGesture_007
+
+
+
+struct DragGesture_006: View {
+    @State private var angle: Angle = .zero
+    @State private var offset: CGSize = .zero
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.orange)
+                .frame(width: 20, height: 20)
+            Image(systemName: "arrow.right.circle.fill")
+                .foregroundColor(Color.red)
+                .font(.largeTitle)
+                .rotationEffect(angle)
+                .offset(offset)
+                .gesture(
+                    DragGesture(minimumDistance: 50, coordinateSpace: .local)
+                        .onChanged({ (value) in
+                            let translation = value.translation
+                            
+                            let point1 = Double(translation.width == 0 ? 0 : translation.width)
+                            let point2 = Double(translation.height)
+                            
+                            let a = point1 < 0 ? atan(Double(point2 / point1)) : atan(Double(point2 / point1)) - Double.pi
+                            
+                            // MARK - radians instead of degrees
+                            //angle = Angle(degrees: a)
+                            angle = Angle(radians: a)
+                            offset = value.translation
+                        })
+                        .onEnded({ (value) in
+                            angle = .zero
+                            offset = .zero
+                        })
+                )
+                .animation(.spring())
+        }
+    }
+}
+
+struct DragGesture_005: View {
+    @GestureState private var offset = CGSize.zero
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.orange, lineWidth: 5)
+                .frame(width: 100, height: 100)
+            Image(systemName: "arrow.right.circle")
+                .font(.largeTitle)
+                .foregroundColor(.orange)
+        }.offset(offset)
+            .gesture(
+                DragGesture(minimumDistance: 100) // minimumDistance !
+//                    .updating($offset, body: {(value, state, transaction) in
+                    .updating($offset, body: {(value, state, _) in
+                        state = value.translation
+                        
+                    })
+                
+            )
+            .animation(.spring())
+        
+        
+    }
+}
 
 struct DragGesture_004: View {
-    @State private var siderPosition: CGFloat = 50 - UIScreen.main.bounds.width
+    @State private var sliderPosition: CGFloat = 50 - UIScreen.main.bounds.width
     @GestureState private var offset = CGSize.zero
     
     
@@ -24,39 +150,44 @@ struct DragGesture_004: View {
     var body: some View {
         GeometryReader { geoProxy in
             VStack {
-                Text("test_001")
-                    .font(.largeTitle)
+//                Text("test_001")
+//                    .font(.largeTitle)
                 Spacer()
                 HStack {
                     Spacer()
                     Image(systemName: "line.horizontal.3")
-//                        .font(.largeTitle)
-//                        .frame(width: 100, height: 100)
                         .rotationEffect(.degrees(90))
-//                        .foregroundColor(Color.orange)
-//                        .background(Color.blue)
-                    Spacer()
+//                    Spacer()
                 }
                 .foregroundColor(.white)
                 .frame(height: 100)
                 .padding()
-                .background {
+                .background(
                     ZStack {
                         Rectangle().fill(Color.orange).offset(x: -100)
-//                            .fill(Color.orange)
-//                            .offset(x: -100)
                         Capsule().fill(Color.orange)
                     }
-                }
-//                Spacer()
+                )
+                .offset(x: sliderPosition + offset.width)
+                .gesture(
+                    DragGesture()
+                        .updating($offset, body: { (value, state, transaction) in //????
+                            state = value.translation
+                        })
+                        .onEnded({ value in
+                            if value.translation.width < -geoProxy.size.width * 0.4 {
+                                sliderPosition = 50 - geoProxy.size.width
+                            } else {
+                                sliderPosition = 0
+                            }
+                                
+                        })
+                )
+                .animation(.spring())
+                
+                //Spacer()
             }
         }
-//        RoundedRectangle(cornerRadius: 20)
-//            .fill(Color.orange)
-//            .frame(width: 100, height: 100)
-        
-        
-        
     }
 }
 
@@ -99,7 +230,6 @@ struct DragGesture_003: View {
         
     }
 }
-
 
 struct DragGesture_002: View {
     @GestureState private var isMoving: Bool = false
