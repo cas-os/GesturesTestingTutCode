@@ -9,12 +9,63 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        DragGesture_007()
+        DragGesture_008()
         
     }
 }
 
 // MARK - to check difference between .animation (deprecated in iOS 15.0) vs .withanimation ..?
+
+
+struct DragGesture_008: View {
+    @State private var maxHeight: CGFloat = 200
+    @State private var sliderProgress: CGFloat = 0
+    @State private var sliderHeight: CGFloat = 0
+    @State private var currentSliderValue: CGFloat = 0
+    
+    private var labelHeight: CGFloat = 50
+    
+    var body: some View {
+        VStack {
+            ZStack(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.black.opacity(0.3))
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(height: sliderHeight)
+            }
+            .frame(width: 70, height: maxHeight)
+            .cornerRadius(40)
+            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 2, y: 2)
+            .shadow(color: Color.black.opacity(0.2), radius: 5, x: -2, y: -2)
+            .gesture(
+                DragGesture()
+                    .onChanged({ value in
+                        let translation = value.translation
+                        sliderHeight = -translation.height + currentSliderValue
+                        sliderHeight = sliderHeight > maxHeight ? maxHeight : sliderHeight
+                        
+                        sliderHeight = sliderHeight >= 0 ? sliderHeight : 0
+                        let progress = sliderHeight / maxHeight
+                        sliderProgress = progress <= 1.0 ? progress : 1
+                    })
+                    .onEnded({ value in
+                        sliderHeight = sliderHeight > maxHeight ? maxHeight : sliderHeight
+                        sliderHeight = sliderHeight >= 0 ? sliderHeight : 0
+                        currentSliderValue = sliderHeight
+                    })
+            )
+            .overlay(
+                Image(systemName: (sliderHeight / maxHeight > 0.5 ? "sun.max.fill" : "sun.min.fill"))
+                    .font(.largeTitle)
+                    .padding(.bottom, 20)
+                    .foregroundColor(Color.black.opacity(0.5))
+                    .animation(.easeIn)
+                ,alignment: .bottom
+            )
+        }
+    }
+}
 
 
 struct DragGesture_007: View {
@@ -33,15 +84,13 @@ struct DragGesture_007: View {
         }
     }
 }
-
-
 struct DTRangeSlider_007: View {
     @Binding var minValue: Float
     @Binding var maxValue: Float
     
     @State var sliderWidth: CGFloat = 0.0
     @State var backgroundTrackColor = Color.green.opacity(0.3)
-    @State var selectedTrackColor = Color.orange.opacity(0.25)
+    @State var selectedTrackColor = Color.orange
     
     @State var globeColor = Color.gray
     @State var globeBackgroundColor = Color.black
@@ -55,6 +104,7 @@ struct DTRangeSlider_007: View {
                     .offset(x: 28, y: 20)
                     .frame(width: 30, height: 30, alignment: .leading)
                     .foregroundColor(globeMinMaxValuesColor)
+                
                 Spacer()
                 
                 Text("100")
@@ -63,10 +113,61 @@ struct DTRangeSlider_007: View {
                     .foregroundColor(globeMinMaxValuesColor)
                 
             }
+            .padding()
             ZStack(alignment: Alignment(horizontal: .leading, vertical: .center)) {
                 Capsule()
                     .fill(backgroundTrackColor)
                     .frame(width: CGFloat(sliderWidth + 10), height: 20, alignment: .center)
+                Capsule()
+                    .fill(selectedTrackColor)
+                    .offset(x: CGFloat(minValue))
+                    .frame(width: CGFloat(maxValue - minValue), height: 20)
+                
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(globeColor)
+                        .frame(width: 40, height: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10).stroke(globeBackgroundColor, lineWidth: 2))
+                        .offset(x: CGFloat(minValue))
+                        .gesture(
+                            DragGesture()
+                                .onChanged({ value in
+                                    if value.location.x > 8 && value.location.x <= self.sliderWidth && value.location.x < CGFloat(maxValue - 30) {
+                                        minValue = Float(value.location.x - 8)
+                                    }
+                                }
+                                )
+                        )
+                    Text(String(format: "%.0f", (CGFloat(minValue) / sliderWidth) * 100))
+                        .offset(x: CGFloat(minValue))
+                        .multilineTextAlignment(.center)
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(globeMinMaxValuesColor)
+                }
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(globeColor)
+                        .frame(width: 40, height: 40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(globeBackgroundColor, lineWidth: 2))
+                        .offset(x: CGFloat(maxValue - 18))
+                        .gesture(
+                            DragGesture()
+                                .onChanged({ value in
+                                    if value.location.x - 8 <= sliderWidth && value.location.x > CGFloat(minValue + 50) {
+                                        maxValue = Float(value.location.x - 8)
+                                    }
+                                })
+                        )
+                        
+                }
+                Text(String(format: "%.0f", (CGFloat(maxValue) / sliderWidth) * 100))
+                    .offset(x: CGFloat(maxValue - 15))
+                    .multilineTextAlignment(.center)
+                    .frame(width: 30, height: 30)
+                    .foregroundColor(globeMinMaxValuesColor)
             }
         }
     }
